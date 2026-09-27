@@ -94,9 +94,9 @@ docker run -d --name nuvio-watchparty -p 8089:8089 --restart unless-stopped nuvi
 
 ---
 
-## 📺 How to Use on Samsung TV (`nuvio-party-tv.wgt`)
+## 📺 How to Use on Samsung TV (`nuviox-tv.wgt`)
 
-1. Open **Nuvio Party** on your Samsung TV.
+1. Open **NuvioX** on your Samsung TV (Package: `NuvioX0001.NuvioX`).
 2. Start any movie or series stream.
 3. Press the **Yellow button** (or `W` / `F4`) on your remote to bring up the on-screen **Watch Party HUD**.
 4. The HUD displays:
@@ -108,9 +108,9 @@ docker run -d --name nuvio-watchparty -p 8089:8089 --restart unless-stopped nuvi
 
 ---
 
-## 📱 How to Use on Android Mobile (`nuvio-mobile.apk`)
+## 📱 How to Use on Android Mobile (`nuviox-mobile.apk`)
 
-1. Open **Nuvio (Debug)** on your Android phone and start any video.
+1. Open **NuvioX** on your Android phone (Package: `com.nuviox.app`) and start any video.
 2. Tap the screen to reveal the player controls.
 3. Tap the **Watch Party button** (groups icon) in the top-right header or bottom toolbar.
 4. Verify or enter your **Room Code** (e.g. `NUVIO1`) and **Server URL** (e.g. `ws://192.168.0.101:8089` or your Cloudflare tunnel).

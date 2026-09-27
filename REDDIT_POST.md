@@ -73,9 +73,9 @@ If your friends or partner are not on your home WiFi, don't open router ports. I
 
 ---
 
-## 📺 How to Use on Samsung TV (`nuvio-party-tv.wgt`)
+## 📺 How to Use on Samsung TV (`nuviox-tv.wgt`)
 
-1. Install the standalone package (packaged as `NuvioWP002` so it **does not overwrite** your official Nuvio TV app).
+1. Install the standalone package (packaged as `NuvioX0001.NuvioX` / App: `NuvioX` so it **does not overwrite** your official Nuvio TV app).
 2. Start any movie or show.
 3. Press the **Yellow remote button** (or `W`/`F4`) to open the **Watch Party HUD**.
 4. Type your **Room Code** (e.g., `NUVIO1`) and **Server URL** using your remote.
@@ -83,9 +83,9 @@ If your friends or partner are not on your home WiFi, don't open router ports. I
 
 ---
 
-## 📱 How to Use on Android Mobile (`nuvio-mobile.apk`)
+## 📱 How to Use on Android Mobile (`nuviox-mobile.apk`)
 
-1. Install the standalone APK (packaged as `com.nuviodebug.com` so it installs side-by-side with your existing Nuvio app).
+1. Install the standalone APK (packaged as `com.nuviox.app` / App: `NuvioX` so it installs side-by-side with your existing Nuvio app).
 2. Play any video and tap the screen.
 3. Tap the **Watch Party (Groups) icon** on the top right or bottom controls.
 4. Enter the same Room Code and Server URL, then tap **Join Party**.
@@ -108,7 +108,7 @@ If your friends or partner are not on your home WiFi, don't open router ports. I
 - 🔗 **Watch Party Server & Termux Scripts:** [github.com/Krishnakant010/nuvio-watchparty](https://github.com/Krishnakant010/nuvio-watchparty)
 - 📝 **Detailed Changelog & Root Cause Analysis:** Read `CHANGELOG.md` in the repo for full code line references and bug fixes.
 - 📦 **Pre-built Packages:**
-  - Samsung TV Widget: `nuvio-party-tv.wgt` (Side-by-side safe)
-  - Android APK: `nuvio-mobile.apk` (Side-by-side safe)
+  - Samsung TV Widget: `nuviox-tv.wgt` (App: `NuvioX`, Package: `NuvioX0001.NuvioX`)
+  - Android APK: `nuviox-mobile.apk` (App: `NuvioX`, Package: `com.nuviox.app`)
 
 Feedback, issues, and PRs are welcome! Happy group watching! 🍿🎬

@@ -68,6 +68,6 @@ Enable seamless, real-time playback synchronization between Samsung Smart TVs an
 
 ---
 
-## 5. Side-by-Side App Packaging
-- **Samsung TV:** Packaged as `NuvioWP002.NuvioNative` (`nuvio-party-tv.wgt`), leaving official TV app untouched.
-- **Android Mobile:** Packaged as `com.nuviodebug.com` (`nuvio-mobile.apk`), leaving official mobile app untouched.
+## 5. Production-Ready "NuvioX" App Packaging
+- **Samsung TV:** Packaged as `NuvioX0001.NuvioX` (`nuviox-tv.wgt`), app label `NuvioX`, leaving official TV app untouched.
+- **Android Mobile:** Packaged as `com.nuviox.app` (`nuviox-mobile.apk`), app label `NuvioX`, leaving official mobile app untouched.
