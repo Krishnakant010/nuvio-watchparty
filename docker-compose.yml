@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  nuvio-watchparty:
+    build: .
+    container_name: nuvio-watchparty
+    restart: unless-stopped
+    ports:
+      - "8089:8089"
+    environment:
+      - PORT=8089

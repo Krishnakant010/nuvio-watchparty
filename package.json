@@ -1,0 +1,23 @@
+{
+  "name": "nuvio-watchparty",
+  "version": "1.0.0",
+  "description": "Ultra-lightweight, zero-dependency real-time Watch Party coordination server for Nuvio (Samsung TV & Android Mobile)",
+  "type": "module",
+  "main": "server.mjs",
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "node --watch server.mjs"
+  },
+  "keywords": [
+    "nuvio",
+    "watchparty",
+    "sync",
+    "samsung-tv",
+    "tizen",
+    "android",
+    "termux",
+    "websocket"
+  ],
+  "author": "Krishnakant",
+  "license": "MIT"
+}
