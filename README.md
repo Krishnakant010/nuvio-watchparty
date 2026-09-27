@@ -1,4 +1,4 @@
-# 🍿 Nuvio Watch Party
+# 🍿 Nuvio Watch Party & NuvioX
 
 > Ultra-lightweight, zero-dependency, real-time playback synchronization system for **Nuvio** across **Samsung Smart TVs (Tizen)**, **Android Mobile phones**, and **Desktop/Web**.
 
@@ -19,6 +19,86 @@
 
 ---
 
+## 🔄 How Syncing Works (The Two-Way Synchronization Engine)
+
+We added a dedicated, sub-second bi-directional synchronization subsystem connecting Samsung TV's hardware decoder directly to Android's media engine:
+
+```
+┌─────────────────────────────────┐               ┌─────────────────────────────────┐
+│       Samsung Smart TV          │               │         Android Mobile          │
+│   (Native C / AVPlay Engine)    │               │    (Kotlin Multiplatform)       │
+│                                 │               │                                 │
+│  Remote Click (Play/Pause/Seek) │               │  Screen Tap / Timeline Scrub    │
+│                 │               │               │                 │               │
+│                 ▼               │               │                 ▼               │
+│    AVPlay Hook (0ms delay)      │               │   ExoPlayer Controller Hook     │
+└────────────────┬────────────────┘               └────────────────┬────────────────┘
+                 │                                                 │
+      sync(state, timeMs, epoch)                        sync(state, timeMs, epoch)
+                 │                                                 │
+                 ▼                                                 ▼
+     ┌──────────────────────────────────────────────────────────────────┐
+     │           Watch Party Coordination Server (server.mjs)           │
+     │      - Zero-dependency WebSocket engine (<15MB RAM)              │
+     │      - Symmetrical room broadcasting to all connected peers     │
+     │      - Echo suppression (prevents re-trigger loops)              │
+     └─────────────────┬───────────────────────────────┬────────────────┘
+                       │                               │
+                       ▼                               ▼
+     ┌─────────────────────────────────┐ ┌─────────────────────────────────┐
+     │  Receiver Transit Compensation  │ │  Receiver Transit Compensation  │
+     │  offset = now - epoch           │ │  offset = now - epoch           │
+     │  targetMs = timeMs + offset     │ │  targetMs = timeMs + offset     │
+     │  Threshold: 150ms (Pause)       │ │  Threshold: 150ms (Pause)       │
+     │             350ms (Play)        │ │             350ms (Play)        │
+     └─────────────────────────────────┘ └─────────────────────────────────┘
+```
+
+### 1. Instant 0ms Local Event Capture
+- **Samsung TV (`src/video_tizen.c`):** Rather than polling video position once every second, we hooked directly into AVPlay operations (`op === "pausar"` and `op === "buscar"`). The moment a button is pressed on the TV remote, the sync packet dispatches to the WebSocket with **0ms latency**.
+- **Android Mobile (`WatchPartyCoordinator.kt`):** Hooked directly into player controls, scrubbing timeline, double-tap 10s skips, and gesture actions.
+
+### 2. Network Transit Latency Compensation
+Packets traveling over WiFi or the internet can take 50ms–200ms to arrive. If unadjusted, the receiver would always lag behind the sender.
+- Every packet carries a sender timestamp: `epoch = Date.now()`.
+- When the receiving device gets the packet, it calculates transit time:
+  $$\text{transitMs} = \max(0, \text{Date.now}() - \text{msg.epoch})$$
+- If the stream is playing, it advances the seek target by $\text{transitMs}$:
+  $$\text{targetMs} = \text{msg.timeMs} + \text{transitMs}$$
+- This guarantees both devices play the exact same video frame in real time.
+
+### 3. Tightened Sub-Second Drift Deadbands
+- **On Pause:** Frame-accurate threshold of **150ms** (down from 2,500ms). Both screens freeze on the exact same frame.
+- **On Play:** Threshold tightened to **350ms** (down from 2,500ms), eliminating the 2–3 second delay while preventing audio glitches.
+
+### 4. Symmetrical Echo Suppression
+When Device A sends a pause event, Device B pauses. Device B suppresses re-broadcasting its own pause back to Device A for 900ms (`ignoreLocalSyncUntil`), eliminating infinite ping-pong loops.
+
+---
+
+## 📺 What We Did for Samsung TV (`nuviox-tv.wgt`)
+
+In addition to Watch Party syncing, we made major fixes and performance optimizations to the official native C engine for Samsung TV:
+
+1. **Multi-Profile Addon Isolation Bug Fix:**
+   - **Problem:** When switching to Profile 2 (with `uses_primary_addons` turned off and 0 addons), Profile 2 was inheriting all addons from Profile 1.
+   - **Fix:** In `src/addons.c` and `src/sync.c`, memory is unconditionally zeroed on profile load, and `perfilLista` is cleanly marked even when 0 cloud addons are returned. Profiles are now 100% isolated.
+2. **AVPlay Native 4K UHD Mode (`SET_MODE_4K`):**
+   - Configured `player.setStreamingProperty("SET_MODE_4K", "TRUE")` in `src/video_tizen.c`, rendering true 3840×2160 UHD output directly on Samsung's hardware video plane instead of downscaling.
+3. **Adaptive Buffer Tuning (15MB / 30MB):**
+   - Configured `PLAYER_BUFFER_FOR_PLAY` to 15MB and `PLAYER_BUFFER_FOR_RESUME` to 30MB, eliminating initial buffer starvation and stutter on 4K Remux streams.
+4. **Dolby Vision Profile 5 Fix (No More Black / Purple Screens):**
+   - Samsung TVs do not have hardware Dolby Vision decoders. In `src/streams.c`, we updated the stream selection scoring for Tizen to penalize Dolby Vision streams (`p -= 100000`) and boost 4K HDR10/HDR10+ streams (`p += 100000`), ensuring the TV always picks streams that Samsung hardware can display properly.
+5. **Compiler & WebGL Optimization:**
+   - Compiled with `-O3` compiler optimization flags and `-sMAX_WEBGL_VERSION=2` (WebGL 2 enabled).
+   - Tuned pthread pool to 12 threads with dedicated stack sizing (8MB main, 2MB workers), recovering ~72MB of RAM and eliminating thread exhaustion freezes.
+6. **Smart Hub Launcher Preview:**
+   - Registered `use.preview` in `tools/tizen-config.xml` to populate continue-watching media on Samsung's home screen ribbon with 10-minute rate limiting.
+7. **On-Screen Watch Party TV HUD:**
+   - Added an on-screen HUD (toggled with the **Yellow button** or `W`/`F4` on the remote) allowing users to enter custom Room Codes and Server URLs directly using Samsung's native virtual keyboard. Settings persist across TV reboots via `localStorage`.
+
+---
+
 ## 🚀 Quick Start Guide
 
 ### Option 1: Running on Android via Termux (Easiest)
@@ -26,7 +106,7 @@
 You can run the entire Watch Party coordination server directly from your Android phone without needing a computer or VPS!
 
 1. Install **Termux** on your Android phone (from F-Droid or GitHub).
-2. Open Termux and clone this repository:
+2. Open Termux and run:
    ```bash
    pkg update -y && pkg install git nodejs -y
    git clone https://github.com/Krishnakant010/nuvio-watchparty.git
@@ -60,7 +140,7 @@ You can run the entire Watch Party coordination server directly from your Androi
 
 ### Option 3: Remote Watching Across the Internet (Free Cloudflare Tunnel)
 
-If your partner or friends are not on the same home WiFi network (e.g., long-distance relationship, cellular data, or separate houses), you can expose port `8089` securely without opening any router ports:
+If your friends or partner are not on the same home WiFi network, you can expose port `8089` securely without opening any router ports:
 
 1. Start `node server.mjs` on your PC, VPS, or Termux.
 2. In another terminal window, run:
@@ -84,12 +164,6 @@ If your partner or friends are not on the same home WiFi network (e.g., long-dis
 Run with Docker Compose:
 ```bash
 docker compose up -d
-```
-
-Or standalone Docker:
-```bash
-docker build -t nuvio-watchparty .
-docker run -d --name nuvio-watchparty -p 8089:8089 --restart unless-stopped nuvio-watchparty
 ```
 
 ---
@@ -116,31 +190,6 @@ docker run -d --name nuvio-watchparty -p 8089:8089 --restart unless-stopped nuvi
 4. Verify or enter your **Room Code** (e.g. `NUVIO1`) and **Server URL** (e.g. `ws://192.168.0.101:8089` or your Cloudflare tunnel).
 5. Tap **Join Party**. The icon turns green and displays a confirmation toast.
 6. Any pause, scrub, or 10s skip instantly syncs across all devices.
-
----
-
-## ⚙️ How It Works (Architecture & Protocol)
-
-### Zero-Delay Event Loop
-1. **Samsung TV (Native C & AVPlay):**
-   - In `src/video_tizen.c`, whenever the hardware decoder pauses, plays, or seeks (`op === "pausar"` / `op === "buscar"`), it notifies the WebSocket bridge immediately (0ms delay).
-2. **Android Mobile (Jetpack Compose & Media3/ExoPlayer):**
-   - In `PlayerScreenRuntimeGestureActions.kt` and `PlayerControls.kt`, user playback actions fire `onLocalPlay`, `onLocalPause`, and `onLocalSeek` directly into `WatchPartyCoordinator.kt`.
-3. **Network Transit Compensation:**
-   - Every `sync` packet contains an `epoch` timestamp:
-     ```json
-     {
-       "type": "sync",
-       "room": "NUVIO1",
-       "state": "playing",
-       "timeMs": 42000,
-       "epoch": 1790506000000
-     }
-     ```
-   - When a peer receives the packet, it calculates transit delay `transit = Date.now() - epoch` and offsets the target timestamp by `transit` ms, guaranteeing audio/video alignment within a fraction of a second.
-4. **Drift Tolerances:**
-   - **On Pause:** Snaps to the exact frame (tolerance `150ms`).
-   - **On Play:** Snaps smoothly without audio glitching (tolerance `350ms`).
 
 ---
 
